@@ -33,102 +33,16 @@
 #include <EthernetClient.h>
 #include <EthernetServer.h>
 
-/********************************************************************
- * CONFIGURATION
- ********************************************************************/
-
-#define WEBDUINO_VERSION 1007
-#define WEBDUINO_VERSION_STRING "1.7"
-
-// standard END-OF-LINE marker in HTTP
-#define CRLF "\r\n"
-
-// If processConnection is called without a buffer, it allocates one
-// of 32 bytes
-#define WEBDUINO_DEFAULT_REQUEST_LENGTH 32
-
-// How long to wait before considering a connection as dead when
-// reading the HTTP request.  Used to avoid DOS attacks.
-#ifndef WEBDUINO_READ_TIMEOUT_IN_MS
-#define WEBDUINO_READ_TIMEOUT_IN_MS 1000
-#endif
+#define WEBDUINO_VERSION 1008
+#define WEBDUINO_VERSION_STRING "1.8"
 
 #ifndef WEBDUINO_COMMANDS_COUNT
 #define WEBDUINO_COMMANDS_COUNT 8
 #endif
 
-#ifndef WEBDUINO_URL_PATH_COMMAND_LENGTH
-#define WEBDUINO_URL_PATH_COMMAND_LENGTH 8
-#endif
-
-#ifndef WEBDUINO_FAIL_MESSAGE
-#define WEBDUINO_FAIL_MESSAGE "<h1>EPIC FAIL</h1>"
-#endif
-
-#ifndef WEBDUINO_AUTH_REALM
-#define WEBDUINO_AUTH_REALM "Webduino"
-#endif // #ifndef WEBDUINO_AUTH_REALM
-
-#ifndef WEBDUINO_AUTH_MESSAGE
-#define WEBDUINO_AUTH_MESSAGE "<h1>401 Unauthorized</h1>"
-#endif // #ifndef WEBDUINO_AUTH_MESSAGE
-
-#ifndef WEBDUINO_SERVER_ERROR_MESSAGE
-#define WEBDUINO_SERVER_ERROR_MESSAGE "<h1>500 Internal Server Error</h1>"
-#endif // WEBDUINO_SERVER_ERROR_MESSAGE
-
 #ifndef WEBDUINO_OUTPUT_BUFFER_SIZE
 #define WEBDUINO_OUTPUT_BUFFER_SIZE 32
 #endif // WEBDUINO_OUTPUT_BUFFER_SIZE
-
-// add '#define WEBDUINO_FAVICON_DATA ""' to your application
-// before including WebServer.h to send a null file as the favicon.ico file
-// otherwise this defaults to a 16x16 px black diode on blue ground
-// (or include your own icon if you like)
-#ifndef WEBDUINO_FAVICON_DATA
-#define WEBDUINO_FAVICON_DATA { 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x10, \
-                                0x10, 0x02, 0x00, 0x01, 0x00, 0x01, 0x00, \
-                                0xb0, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, \
-                                0x00, 0x28, 0x00, 0x00, 0x00, 0x10, 0x00, \
-                                0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x01, \
-                                0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, \
-                                0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, \
-                                0x00, 0xff, 0xff, 0x00, 0x00, 0xcf, 0xbf, \
-                                0x00, 0x00, 0xc7, 0xbf, 0x00, 0x00, 0xc3, \
-                                0xbf, 0x00, 0x00, 0xc1, 0xbf, 0x00, 0x00, \
-                                0xc0, 0xbf, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0xc0, 0xbf, 0x00, 0x00, 0xc1, 0xbf, \
-                                0x00, 0x00, 0xc3, 0xbf, 0x00, 0x00, 0xc7, \
-                                0xbf, 0x00, 0x00, 0xcf, 0xbf, 0x00, 0x00, \
-                                0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, \
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
-                                0x00, 0x00 }
-#endif // #ifndef WEBDUINO_FAVICON_DATA
-
-// add "#define WEBDUINO_SERIAL_DEBUGGING 1" to your application
-// before including WebServer.h to have incoming requests logged to
-// the serial port.
-#ifndef WEBDUINO_SERIAL_DEBUGGING
-#define WEBDUINO_SERIAL_DEBUGGING 0
-#endif
-#if WEBDUINO_SERIAL_DEBUGGING
-#include <HardwareSerial.h>
-#endif
-
-// declared in wiring.h
-extern "C" unsigned long millis(void);
 
 // declare a static string
 #ifdef __AVR__
@@ -136,16 +50,6 @@ extern "C" unsigned long millis(void);
 #else
 #define P(name)   static const unsigned char name[]
 #endif
-
-// returns the number of elements in the array
-#define SIZE(array) (sizeof(array) / sizeof(*array))
-
-#ifdef _VARIANT_ARDUINO_DUE_X_
-#define pgm_read_byte(ptr) (unsigned char)(* ptr)
-#endif
-/********************************************************************
- * DECLARATIONS
- ********************************************************************/
 
 /* Return codes from nextURLparam.  NOTE: URLPARAM_EOS is returned
  * when you call nextURLparam AFTER the last parameter is read.  The
@@ -197,6 +101,10 @@ public:
   // handler.  This version saves the "tail" of the URL in buff.
   void processConnection(char *buff, int *bufflen);
 
+  void processConnection(uint8_t sock);
+
+  void processConnection(uint8_t sock, char *buff, int *bufflen);
+
   // set command that's run when you access the root of the server
   void setDefaultCommand(Command *cmd);
 
@@ -223,9 +131,9 @@ public:
 
   // support for C style formating
   void printf(char *fmt, ... );
-  #ifdef F
+#ifdef F
   void printf(const __FlashStringHelper *format, ... );
-  #endif
+#endif
 
   // output raw data stored in program memory
   void writeP(const unsigned char *data, size_t length);
@@ -252,7 +160,7 @@ public:
   // returns true if a number, with possible whitespace in front, was
   // read from the server stream.  number will be set with the new
   // value or 0 if nothing was read.
-  bool readInt(int &number);
+  bool readInt(long int &number);
 
   // reads a header value, stripped of possible whitespace in front,
   // from the server stream
@@ -292,6 +200,8 @@ public:
   // output headers indicating "204 No Content" and no further message
   void httpNoContent();
 
+  void httpNotFound();
+
   // output standard headers indicating "200 Success".  You can change the
   // type of the data you're outputting or also add extra headers like
   // "Refresh: 1".  Extra headers should each be terminated with CRLF.
@@ -305,7 +215,7 @@ public:
 
   // implementation of write used to implement Print interface
   virtual size_t write(uint8_t);
-  virtual size_t write(const uint8_t *buffer, size_t size);
+  virtual size_t write(const char *buffer, size_t size);
 
   // tells if there is anything to process
   uint8_t available();
@@ -321,9 +231,9 @@ private:
   const char *m_urlPrefix;
 
   unsigned char m_pushback[32];
-  unsigned char m_pushbackDepth;
+  uint8_t m_pushbackDepth;
 
-  int m_contentLength;
+  long int m_contentLength;
   char m_authCredentials[51];
   bool m_readingContent;
 
@@ -334,7 +244,7 @@ private:
     const char *verb;
     Command *cmd;
   } m_commands[WEBDUINO_COMMANDS_COUNT];
-  unsigned char m_cmdCount;
+  uint8_t m_cmdCount;
   UrlPathCommand *m_urlPathCmd;
 
   uint8_t m_buffer[WEBDUINO_OUTPUT_BUFFER_SIZE];

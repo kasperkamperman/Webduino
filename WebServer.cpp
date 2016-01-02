@@ -31,9 +31,96 @@
 #include <EthernetServer.h>
 #include "WebServer.h"
 
-/********************************************************************
- * IMPLEMENTATION
- ********************************************************************/
+// standard END-OF-LINE marker in HTTP
+#define CRLF "\r\n"
+
+// If processConnection is called without a buffer, it allocates one
+// of 32 bytes
+#define WEBDUINO_DEFAULT_REQUEST_LENGTH 32
+
+// How long to wait before considering a connection as dead when
+// reading the HTTP request.  Used to avoid DOS attacks.
+#ifndef WEBDUINO_READ_TIMEOUT_IN_MS
+#define WEBDUINO_READ_TIMEOUT_IN_MS 1000
+#endif
+
+#ifndef WEBDUINO_URL_PATH_COMMAND_LENGTH
+#define WEBDUINO_URL_PATH_COMMAND_LENGTH 8
+#endif
+
+#ifndef WEBDUINO_FAIL_MESSAGE
+#define WEBDUINO_FAIL_MESSAGE "<h1>EPIC FAIL</h1>"
+#endif
+
+#ifndef WEBDUINO_AUTH_REALM
+#define WEBDUINO_AUTH_REALM "Webduino"
+#endif // #ifndef WEBDUINO_AUTH_REALM
+
+#ifndef WEBDUINO_AUTH_MESSAGE
+#define WEBDUINO_AUTH_MESSAGE "<h1>401 Unauthorized</h1>"
+#endif // #ifndef WEBDUINO_AUTH_MESSAGE
+
+#ifndef WEBDUINO_SERVER_ERROR_MESSAGE
+#define WEBDUINO_SERVER_ERROR_MESSAGE "<h1>500 Internal Server Error</h1>"
+#endif // WEBDUINO_SERVER_ERROR_MESSAGE
+
+#ifndef WEBDUINO_NOT_FOUND_MESSAGE
+#define WEBDUINO_NOT_FOUND_MESSAGE "<h1>404 Not Found</h1>"
+#endif // WEBDUINO_NOT_FOUND_MESSAGE
+
+// add '#define WEBDUINO_FAVICON_DATA ""' to your application
+// before including WebServer.h to send a null file as the favicon.ico file
+// otherwise this defaults to a 16x16 px black diode on blue ground
+// (or include your own icon if you like)
+#ifndef WEBDUINO_FAVICON_DATA
+#define WEBDUINO_FAVICON_DATA { 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x10, \
+                                0x10, 0x02, 0x00, 0x01, 0x00, 0x01, 0x00, \
+                                0xb0, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, \
+                                0x00, 0x28, 0x00, 0x00, 0x00, 0x10, 0x00, \
+                                0x00, 0x00, 0x20, 0x00, 0x00, 0x00, 0x01, \
+                                0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, \
+                                0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, \
+                                0x00, 0xff, 0xff, 0x00, 0x00, 0xcf, 0xbf, \
+                                0x00, 0x00, 0xc7, 0xbf, 0x00, 0x00, 0xc3, \
+                                0xbf, 0x00, 0x00, 0xc1, 0xbf, 0x00, 0x00, \
+                                0xc0, 0xbf, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0xc0, 0xbf, 0x00, 0x00, 0xc1, 0xbf, \
+                                0x00, 0x00, 0xc3, 0xbf, 0x00, 0x00, 0xc7, \
+                                0xbf, 0x00, 0x00, 0xcf, 0xbf, 0x00, 0x00, \
+                                0xff, 0xff, 0x00, 0x00, 0xff, 0xff, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, \
+                                0x00, 0x00 }
+#endif // #ifndef WEBDUINO_FAVICON_DATA
+
+// add "#define WEBDUINO_SERIAL_DEBUGGING 1" to your application
+// before including WebServer.h to have incoming requests logged to
+// the serial port.
+#ifndef WEBDUINO_SERIAL_DEBUGGING
+#define WEBDUINO_SERIAL_DEBUGGING 0
+#endif
+#if WEBDUINO_SERIAL_DEBUGGING
+#include <HardwareSerial.h>
+#endif
+
+// returns the number of elements in the array
+#define SIZE(array) (sizeof(array) / sizeof(*array))
+
+#ifdef _VARIANT_ARDUINO_DUE_X_
+#define pgm_read_byte(ptr) (unsigned char)(* ptr)
+#endif
+
 
 WebServer::WebServer(const char *urlPrefix, uint16_t port) :
   m_server(port),
@@ -93,7 +180,7 @@ size_t WebServer::write(uint8_t ch)
   return sizeof(ch);
 }
 
-size_t WebServer::write(const uint8_t *buffer, size_t size)
+size_t WebServer::write(const char *buffer, size_t size)
 {
   flushBuf(); //Flush any buffered output
   return m_client.write(buffer, size);
@@ -166,7 +253,7 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
   // trailing slash or if the URL is just the slash
   if ((verb[0] == 0) || ((verb[0] == '/') && (verb[1] == 0)))
   {
-    m_defaultCmd(*this, requestType, (char*)"", tail_complete);
+    m_defaultCmd(*this, requestType, (char *) "", tail_complete);
     return true;
   }
   // if the URL is just a slash followed by a question mark
@@ -183,7 +270,7 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
   {
     uint8_t i;
     char *qm_loc;
-    uint16_t verb_len;
+    size_t verb_len;
     uint8_t qm_offset;
     // Skip over the leading "/",  because it makes the code more
     // efficient and easier to understand.
@@ -244,15 +331,35 @@ bool WebServer::dispatchCommand(ConnectionType requestType, char *verb,
 void WebServer::processConnection()
 {
   char request[WEBDUINO_DEFAULT_REQUEST_LENGTH];
-  int  request_len = WEBDUINO_DEFAULT_REQUEST_LENGTH;
-  processConnection(request, &request_len);
+  int  request_len;
+
+  for (uint8_t sock = 0; sock < MAX_SOCK_NUM; sock++) {
+    request_len = WEBDUINO_DEFAULT_REQUEST_LENGTH;
+    processConnection(sock, request, &request_len);
+  }
 }
 
 void WebServer::processConnection(char *buff, int *bufflen)
 {
+  int len;
+  for (uint8_t sock = 0; sock < MAX_SOCK_NUM; sock++) {
+    len = *bufflen;
+    processConnection(sock, buff, &len);
+  }
+}
+
+void WebServer::processConnection(uint8_t sock)
+{
+  char request[WEBDUINO_DEFAULT_REQUEST_LENGTH];
+  int  request_len = WEBDUINO_DEFAULT_REQUEST_LENGTH;
+  processConnection(sock, request, &request_len);
+}
+
+void WebServer::processConnection(uint8_t sock, char *buff, int *bufflen)
+{
   int urlPrefixLen = strlen(m_urlPrefix);
 
-  m_client = m_server.available();
+  m_client = m_server.available(sock);
 
   if (m_client) {
     m_readingContent = false;
@@ -382,6 +489,23 @@ void WebServer::httpUnauthorized()
     WEBDUINO_AUTH_MESSAGE;
 
   printP(unauthMsg2);
+}
+
+void WebServer::httpNotFound()
+{
+  P(notFoundMsg1) = "HTTP/1.0 404 Not Found" CRLF;
+  printP(notFoundMsg1);
+
+#ifndef WEBDUINO_SUPRESS_SERVER_HEADER
+  printP(webServerHeader);
+#endif
+
+  P(notFoundMsg2) =
+    "Content-Type: text/html" CRLF
+    CRLF
+    WEBDUINO_NOT_FOUND_MESSAGE;
+
+  printP(notFoundMsg2);
 }
 
 void WebServer::httpServerError()
@@ -564,7 +688,7 @@ bool WebServer::expect(const char *str)
   return true;
 }
 
-bool WebServer::readInt(int &number)
+bool WebServer::readInt(long int &number)
 {
   bool negate = false;
   bool gotNumber = false;
@@ -664,7 +788,7 @@ bool WebServer::readPOSTparam(char *name, int nameLen,
       int ch2 = read();
       if (ch1 == -1 || ch2 == -1)
         return false;
-      char hex[3] = { (char)ch1, (char)ch2, '\0' };
+      char hex[3] = { (char) ch1, (char) ch2, '\0' };
       ch = strtoul(hex, NULL, 16);
     }
 

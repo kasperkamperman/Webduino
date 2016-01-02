@@ -321,7 +321,7 @@ void setupNetwork() {
 */
 
 #ifdef USE_SYSTEM_LIBRARY
-#include "system.h"
+#include "System.h"
 System sys;
 #endif
 

@@ -36,10 +36,16 @@ These have all been tested with the library successfully:
 - [Adafruit Ethernet Shield w/ Wiznet 811MJ module](http://www.ladyada.net/make/eshield/)
 - [NKC Electronics Ethernet Shield DIY Kit](http://store.nkcelectronics.com/nkc-ethernet-shield-diy-kit-without-wiz812mj-mod812.html)
 
-Shields using the Microchip ENC28J60 chip won't work with the library as that requires more software support for implementating 
+Shields using the Microchip ENC28J60 chip won't work with the library as that requires more software support for implementating
 the TCP/IP stack.
 
 ## Version history
+
+### 1.8 released in Jan 2012
+
+- added httpNotFound() method to output 404 error message
+- added processConnection(uint8_t sock) and processConnection(uint8_t sock, char *buff, int *bufflen) methods
+- increased size of 'm_contentLength' to 'long int'
 
 ### 1.7 released in Jan 2012
 
