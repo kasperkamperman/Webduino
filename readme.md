@@ -41,6 +41,10 @@ the TCP/IP stack.
 
 ## Version history
 
+### 1.9 released in May 2016
+
+- fixed bug with compatibility with original version of Ethernet library
+
 ### 1.8 released in Jan 2012
 
 - added httpNotFound() method to output 404 error message

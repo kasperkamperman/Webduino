@@ -333,12 +333,18 @@ void WebServer::processConnection()
   char request[WEBDUINO_DEFAULT_REQUEST_LENGTH];
   int  request_len;
 
+#ifdef ETHERNET_SERVER_HAS_CUSTOM_SOCKET
   for (uint8_t sock = 0; sock < MAX_SOCK_NUM; sock++) {
     request_len = WEBDUINO_DEFAULT_REQUEST_LENGTH;
     processConnection(sock, request, &request_len);
   }
+#else
+  request_len = WEBDUINO_DEFAULT_REQUEST_LENGTH;
+  processConnection(request, &request_len);
+#endif
 }
 
+#ifdef ETHERNET_SERVER_HAS_CUSTOM_SOCKET
 void WebServer::processConnection(char *buff, int *bufflen)
 {
   int len;
@@ -354,12 +360,21 @@ void WebServer::processConnection(uint8_t sock)
   int  request_len = WEBDUINO_DEFAULT_REQUEST_LENGTH;
   processConnection(sock, request, &request_len);
 }
+#endif
 
+#ifdef ETHERNET_SERVER_HAS_CUSTOM_SOCKET
 void WebServer::processConnection(uint8_t sock, char *buff, int *bufflen)
+#else
+void WebServer::processConnection(char *buff, int *bufflen)
+#endif
 {
   int urlPrefixLen = strlen(m_urlPrefix);
 
+#ifdef ETHERNET_SERVER_HAS_CUSTOM_SOCKET
   m_client = m_server.available(sock);
+#else
+  m_client = m_server.available();
+#endif
 
   if (m_client) {
     m_readingContent = false;

@@ -101,9 +101,11 @@ public:
   // handler.  This version saves the "tail" of the URL in buff.
   void processConnection(char *buff, int *bufflen);
 
+#ifdef ETHERNET_SERVER_HAS_CUSTOM_SOCKET
   void processConnection(uint8_t sock);
 
   void processConnection(uint8_t sock, char *buff, int *bufflen);
+#endif
 
   // set command that's run when you access the root of the server
   void setDefaultCommand(Command *cmd);
