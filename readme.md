@@ -1,4 +1,4 @@
-# Webduino (Particle)
+# WebServer - Webduino (Particle)
 
 This is a port to work with the Particle TCPServer and TCPClient implementations. It is a lot faster then the [last port/implementation](https://github.com/m-mcgowan/Webduino), because that introduced the `fixmedelay()` macro of 20ms. A test request took 300ms with it and 30ms without... I assumed that the bug is solved (at least on the Photon it runs perfect). 
 

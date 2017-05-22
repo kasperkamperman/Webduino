@@ -1,4 +1,4 @@
-#include "WebServer.h"
+#include "WebDuino.h"
 
 // standard END-OF-LINE marker in HTTP
 #define CRLF "\r\n"
@@ -79,6 +79,13 @@
 #ifndef WEBDUINO_SERIAL_DEBUGGING
 #define WEBDUINO_SERIAL_DEBUGGING 0
 #endif
+
+#if WEBDUINO_SERIAL_DEBUGGING
+  #define SERIAL_DUMP(buf, len) Serial.write(buf, len);
+#else
+  #define SERIAL_DUMP(buf, len)
+#endif
+
 #if WEBDUINO_SERIAL_DEBUGGING && !defined(PLATFORM_ID)
 #include <HardwareSerial.h>
 #endif
@@ -149,9 +156,10 @@ size_t WebServer::write(uint8_t ch)
   return sizeof(ch);
 }
 
-size_t WebServer::write(const char *buffer, size_t size)
+size_t WebServer::write(const uint8_t *buffer, size_t size)
 {
   flushBuf(); //Flush any buffered output
+  SERIAL_DUMP(buffer, size);
   return m_client.write(buffer, size);
 }
 
@@ -159,6 +167,7 @@ void WebServer::flushBuf()
 {
   if(m_bufFill > 0)
   {
+    SERIAL_DUMP(m_buffer, m_bufFill);
     m_client.write(m_buffer, m_bufFill);
     m_bufFill = 0;
   }
