@@ -49,7 +49,7 @@ the TCP/IP stack.
 
 ## Version history
 
-### 1.9 port to Particle in May 2016
+### 1.9.1 port to Particle in May 2017
 - Uses new the [new Particle library](https://docs.particle.io/guide/tools-and-features/libraries/) structure. 
 
 ### 1.9 released in May 2016
