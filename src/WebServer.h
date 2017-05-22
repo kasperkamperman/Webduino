@@ -29,12 +29,14 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifndef PLATFORM_ID
 #include <Ethernet.h>
 #include <EthernetClient.h>
 #include <EthernetServer.h>
+#else
 
-#define WEBDUINO_VERSION 1008
-#define WEBDUINO_VERSION_STRING "1.8"
+#define WEBDUINO_VERSION 1009
+#define WEBDUINO_VERSION_STRING "1.9"
 
 #ifndef WEBDUINO_COMMANDS_COUNT
 #define WEBDUINO_COMMANDS_COUNT 8
@@ -227,9 +229,17 @@ public:
 
   // Close the current connection and flush ethernet buffers
   void reset();
+
 private:
-  EthernetServer m_server;
-  EthernetClient m_client;
+
+  #ifdef PLATFORM_ID
+    TCPServer m_server;
+    TCPClient m_client;
+  #else
+    EthernetServer m_server;
+    EthernetClient m_client;
+  #endif
+
   const char *m_urlPrefix;
 
   unsigned char m_pushback[32];
@@ -241,11 +251,13 @@ private:
 
   Command *m_failureCmd;
   Command *m_defaultCmd;
+
   struct CommandMap
   {
     const char *verb;
     Command *cmd;
   } m_commands[WEBDUINO_COMMANDS_COUNT];
+
   uint8_t m_cmdCount;
   UrlPathCommand *m_urlPathCmd;
 
