@@ -21,21 +21,14 @@
  * 
  */
 
-#include "SPI.h"
-#include "Ethernet.h"
-#include "WebServer.h"
+#include "WebDuino.h"
 
 // no-cost stream operator as described at 
 // http://sundial.org/arduino/?page_id=119
-template<class T> inline Print &operator <<(Print &obj, T arg)
+template<class T>
+inline Print &operator <<(Print &obj, T arg)
 { obj.print(arg); return obj; }
 
-
-// CHANGE THIS TO YOUR OWN UNIQUE VALUE
-static uint8_t mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-
-// CHANGE THIS TO MATCH YOUR HOST NETWORK
-static uint8_t ip[] = { 192, 168, 1, 210 };
 
 #define PREFIX ""
 
@@ -171,7 +164,6 @@ void setup()
     pinMode(i, INPUT);
   pinMode(9, OUTPUT);
 
-  Ethernet.begin(mac, ip);
   webserver.begin();
 
   webserver.setDefaultCommand(&defaultCmd);
