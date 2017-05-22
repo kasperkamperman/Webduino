@@ -1,6 +1,6 @@
 # Webduino (Particle)
 
-This is a port to work with the Particle TCPServer and TCPClient implementations. It is a lot faster then the [last port/implementation](), because that introduced the `fixmedelay()` macro of 20ms. A test request took 300ms with it and 30ms without... I assumed that the bug is solved (at least on the Photon it runs perfect). 
+This is a port to work with the Particle TCPServer and TCPClient implementations. It is a lot faster then the [last port/implementation](https://github.com/m-mcgowan/Webduino), because that introduced the `fixmedelay()` macro of 20ms. A test request took 300ms with it and 30ms without... I assumed that the bug is solved (at least on the Photon it runs perfect). 
 
 I actually hope this library gets obsolete soon, since there is already an HTTPServer implementation for Wiced (the [Particle Soft AP HTTP Server](https://docs.particle.io/reference/firmware/photon/#softap-http-pages) makes use of this). I hope that they open it up in the Particle API with AP support. Otherwise the [Adafruit HTTPServer implementation](https://learn.adafruit.com/introducing-the-adafruit-wiced-feather-wifi/adafruithttpserver) for their WICED Feather WiFi might be an interesting start (unfortunately I don't have the C skills to start with that). 
 
