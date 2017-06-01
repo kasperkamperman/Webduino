@@ -73,6 +73,11 @@
                                 0x00, 0x00 }
 #endif // #ifndef WEBDUINO_FAVICON_DATA
 
+// ! Something goes wrong with these serial debugging defines. 
+//   I'd expect it to work when adding:
+//   #define WEBDUINO_SERIAL_DEBUGGING 1 (or 2) 
+//   to the application code                                
+//
 // add "#define WEBDUINO_SERIAL_DEBUGGING 1" to your application
 // before including WebServer.h to have incoming requests logged to
 // the serial port.
